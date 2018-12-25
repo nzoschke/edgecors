@@ -14,10 +14,10 @@ module EdgeCors
     config.middleware.insert_before 0, Rack::Cors do
       allow do
         origins %w[
-          http://edgecors.herokuapp.com/
-          https://edgecors.herokuapp.com/
-          http://edgecors.mixable.net/
-          https://edgecors.mixable.net/
+          http://edgecors.herokuapp.com
+          https://edgecors.herokuapp.com
+          http://edgecors.mixable.net
+          https://edgecors.mixable.net
         ]
         resource "*", headers: :any, methods: [:get, :post, :options]
       end

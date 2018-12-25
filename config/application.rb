@@ -13,8 +13,13 @@ module Corsapp
 
     config.middleware.insert_before 0, Rack::Cors do
       allow do
-        origins '*'
-        resource '*', headers: :any, methods: [:get, :post, :options]
+        origins %w[
+          http://edgecors.herokuapp.com/
+          https://edgecors.herokuapp.com/
+          http://edgecors.mixable.net/
+          https://edgecors.mixable.net/
+        ]
+        resource "/assets/*", headers: :any, methods: [:get, :post, :options]
       end
     end
   end

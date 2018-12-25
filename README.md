@@ -7,9 +7,8 @@ This requires:
 
 * Rails asset pipeline serving a custom font
 * CloudFront configured to forward the `Origin` header
-* rack-cors middleware whitelisting herokuapp.com and any custom domain
-
-The [Edge addon](https://elements.heroku.com/addons/edge) provisions CloudFront with the correct settings.
+  * The [Edge addon](https://elements.heroku.com/addons/edge) provisions CloudFront with the correct settings
+* rack-cors middleware whitelisting herokuapp.com and any custom domains
 
 Resources:
 
@@ -63,8 +62,6 @@ body {
 ```
 
 ### Verify in development server
-
-`http://localhost:3000/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf`
 
 ```shell
 $ rails server
@@ -171,7 +168,7 @@ module EdgeCors
 end
 ```
 
-Note that `origins` contains variants of herokuapp and an [Edge custom domain](https://devcenter.heroku.com/articles/edge#custom-domain-setup). Also note there is no trailing slash.
+Note that `origins` contains variants of herokuapp and an [Edge custom domain](https://devcenter.heroku.com/articles/edge#custom-domain-setup). Also note there is no trailing slash on origins.
 
 ## Troubleshooting
 

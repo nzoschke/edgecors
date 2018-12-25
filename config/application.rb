@@ -19,7 +19,7 @@ module EdgeCors
           http://edgecors.mixable.net/
           https://edgecors.mixable.net/
         ]
-        resource "/assets/*", headers: :any, methods: [:get, :post, :options]
+        resource "*", headers: :any, methods: [:get, :post, :options]
       end
     end
   end

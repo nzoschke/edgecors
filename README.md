@@ -1,19 +1,18 @@
 # CloudFront + Rails
 ## With asset pipeline, fonts and CORS
 
-This demonstrates how to use CloudFront with Rails 5 and static assets like fonts, which require CORS.
-
-This requires:
+This demonstrates how to use CloudFront with Rails 5 and static assets like fonts, which require CORS. This uses:
 
 * Rails asset pipeline serving a custom font
 * CloudFront configured to forward the `Origin` header
-  * The [Edge addon](https://elements.heroku.com/addons/edge) provisions CloudFront with the correct settings
-* rack-cors middleware whitelisting herokuapp.com and any custom domains
+* rack-cors middleware white-listing herokuapp.com and any custom domains
+
+This works on Heroku with the [Edge addon](https://elements.heroku.com/addons/edge) which provisions CloudFront with the correct settings.
 
 Resources:
 
-* [Edge CDN addon docs](https://devcenter.heroku.com/articles/edge) to add CloudFront
 * [Getting Started with Rails 5 guide](https://devcenter.heroku.com/articles/getting-started-with-rails5) to create a Rails app on Heroku
+* [Edge CDN addon docs](https://devcenter.heroku.com/articles/edge) to add CloudFront
 * [Using Fonts with Rails Asset Pipeline](https://stackoverflow.com/questions/10905905/using-fonts-with-rails-asset-pipeline) to set up a font
 * [google/fonts](https://github.com/google/fonts) for open-source fonts
 * [rack-cors](https://github.com/cyu/rack-cors) middleware
@@ -78,6 +77,7 @@ You should see the custom font and a request to `http://localhost:3000/assets/In
 $ heroku create edgecors
 
 $ heroku addons:create edge
+
 Creating edge on ⬢ edgecors... $5/month
 Successfully configured https://d372g5jsa84e2.cloudfront.net
 Created edge-reticulated-59593 as EDGE_AWS_ACCESS_KEY_ID, EDGE_AWS_SECRET_ACCESS_KEY, EDGE_DISTRIBUTION_ID, EDGE_URL
@@ -119,13 +119,14 @@ remote:        Cleaning assets
 remote:        Running: rake assets:clean
 ```
 
-### Security warning on Heroku
+### Security warning
+
+If you look at the app now, you **will not** see the custom font. You will see a request to `http://d1unsc88mkka3m.cloudfront.net/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf` with an error in the JavaScript Console:
+
 
 ```shell
 $ heroku open
 ```
-
-You **should not** see the custom font. You will see a request to `http://d1unsc88mkka3m.cloudfront.net/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf` with an error in the JavaScript Console:
 
 ```
 Access to font at 'https://d1unsc88mkka3m.cloudfront.net/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf' from origin 'https://edgecors.herokuapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
@@ -178,11 +179,6 @@ You can look at the `Access-Control-Allow-Origin` header with `curl` commands:
 $ curl --head -H "Origin: https://edgecors.herokuapp.com" http://localhost:3000/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: https://edgecors.herokuapp.com
-Access-Control-Allow-Methods: GET, POST, OPTIONS
-
-$ curl --head -H "Origin: https://edgecors.mixable.net" http://localhost:3000/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf
-HTTP/1.1 200 OK
-Access-Control-Allow-Origin: https://edgecors.mixable.net
 Access-Control-Allow-Methods: GET, POST, OPTIONS
 
 $ curl --head -H "Origin: https://edgecors.mixable.net" http://localhost:3000/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf

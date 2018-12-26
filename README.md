@@ -84,6 +84,144 @@ Created edge-reticulated-59593 as EDGE_AWS_ACCESS_KEY_ID, EDGE_AWS_SECRET_ACCESS
 Use heroku addons:docs edge to view documentation
 ```
 
+### Or Create a CloudFront Distribution
+
+If you aren't using Edge, create a CloudFront distribution with a `foo.herokuapp.com` origin that forwards the `Origin` header. 
+
+<details>
+<summary>Example CloudFront distribution config...</summary>
+
+```json
+{
+    "ETag": "E1H92KNENJ9W16",
+    "DistributionConfig": {
+        "CallerReference": "ccf82eff-405d-4004-b8fd-3feb10391dc3",
+        "Aliases": {
+            "Quantity": 1,
+            "Items": [
+                "edgecors.mixable.net"
+            ]
+        },
+        "DefaultRootObject": "",
+        "Origins": {
+            "Quantity": 1,
+            "Items": [
+                {
+                    "Id": "e4deb8ce-8b8d-4ee9-a708-0f873ffe8734",
+                    "DomainName": "edgecors.herokuapp.com",
+                    "OriginPath": "",
+                    "CustomHeaders": {
+                        "Quantity": 0
+                    },
+                    "CustomOriginConfig": {
+                        "HTTPPort": 80,
+                        "HTTPSPort": 443,
+                        "OriginProtocolPolicy": "match-viewer",
+                        "OriginSslProtocols": {
+                            "Quantity": 3,
+                            "Items": [
+                                "TLSv1",
+                                "TLSv1.1",
+                                "TLSv1.2"
+                            ]
+                        },
+                        "OriginReadTimeout": 30,
+                        "OriginKeepaliveTimeout": 5
+                    }
+                }
+            ]
+        },
+        "OriginGroups": {
+            "Quantity": 0,
+            "Items": []
+        },
+        "DefaultCacheBehavior": {
+            "TargetOriginId": "e4deb8ce-8b8d-4ee9-a708-0f873ffe8734",
+            "ForwardedValues": {
+                "QueryString": false,
+                "Cookies": {
+                    "Forward": "none"
+                },
+                "Headers": {
+                    "Quantity": 1,
+                    "Items": [
+                        "Origin"
+                    ]
+                },
+                "QueryStringCacheKeys": {
+                    "Quantity": 0
+                }
+            },
+            "TrustedSigners": {
+                "Enabled": false,
+                "Quantity": 0
+            },
+            "ViewerProtocolPolicy": "redirect-to-https",
+            "MinTTL": 0,
+            "AllowedMethods": {
+                "Quantity": 7,
+                "Items": [
+                    "HEAD",
+                    "DELETE",
+                    "POST",
+                    "GET",
+                    "OPTIONS",
+                    "PUT",
+                    "PATCH"
+                ],
+                "CachedMethods": {
+                    "Quantity": 2,
+                    "Items": [
+                        "HEAD",
+                        "GET"
+                    ]
+                }
+            },
+            "SmoothStreaming": false,
+            "DefaultTTL": 86400,
+            "MaxTTL": 31536000,
+            "Compress": true,
+            "LambdaFunctionAssociations": {
+                "Quantity": 0
+            },
+            "FieldLevelEncryptionId": ""
+        },
+        "CacheBehaviors": {
+            "Quantity": 0
+        },
+        "CustomErrorResponses": {
+            "Quantity": 0
+        },
+        "Comment": "e4deb8ce-8b8d-4ee9-a708-0f873ffe8734",
+        "Logging": {
+            "Enabled": false,
+            "IncludeCookies": false,
+            "Bucket": "",
+            "Prefix": ""
+        },
+        "PriceClass": "PriceClass_All",
+        "Enabled": true,
+        "ViewerCertificate": {
+            "ACMCertificateArn": "arn:aws:acm:us-east-1:615670401552:certificate/4d4bfd1e-dcd3-4a26-b9a6-4b6f6189f7c1",
+            "SSLSupportMethod": "sni-only",
+            "MinimumProtocolVersion": "TLSv1",
+            "Certificate": "arn:aws:acm:us-east-1:615670401552:certificate/4d4bfd1e-dcd3-4a26-b9a6-4b6f6189f7c1",
+            "CertificateSource": "acm"
+        },
+        "Restrictions": {
+            "GeoRestriction": {
+                "RestrictionType": "none",
+                "Quantity": 0
+            }
+        },
+        "WebACLId": "",
+        "HttpVersion": "http2",
+        "IsIPV6Enabled": true
+    }
+}
+```
+</details>&nbsp;
+
 ### Configure Static Asset Caching
 
 Configure Rails to add a `Cache-Control` header to all static assets in `config/application.rb`:

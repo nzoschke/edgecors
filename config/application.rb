@@ -11,6 +11,8 @@ module EdgeCors
     # Initialize configuration defaults for originally generated Rails version.
     config.load_defaults 5.2
 
+    config.middleware.insert_after ActionDispatch::Static, Rack::Deflater
+
     config.middleware.insert_before 0, Rack::Cors do
       allow do
         origins %w[
@@ -22,5 +24,9 @@ module EdgeCors
         resource "*", headers: :any, methods: [:get, :post, :options]
       end
     end
+
+    config.public_file_server.headers = {
+      'Cache-Control' => 'public, max-age=31536000'
+    }
   end
 end

@@ -4,7 +4,13 @@
 </p>
 
 <%= form_tag("/search", method: "post") do %>
-  <%= label_tag(:q, "Search for:") %>
+  <%= label_tag(:q, "POST Search for:") %>
   <%= text_field_tag(:q) %>
   <%= submit_tag("Search") %>
+<% end %>
+
+<%= form_with url: "/search" do |form| %>
+  <%= label_tag(:q, "AJAX Search for:") %>
+  <%= form.text_field :q %>
+  <%= form.submit "Search" %>
 <% end %>

@@ -6,6 +6,18 @@ require 'rails/all'
 # you've limited to :test, :development, or :production.
 Bundler.require(*Rails.groups)
 
+class Loggo
+  def initialize(app)
+    @app = app
+  end
+  def call(env)
+    puts env.select { |k,v|
+      k.match("^HTTP.*|^CONTENT.*|^REMOTE.*|^REQUEST.*|^AUTHORIZATION.*|^SCRIPT.*|^SERVER.*")
+    }
+    @app.call(env)
+  end
+end
+
 module EdgeCors
   class Application < Rails::Application
     # Initialize configuration defaults for originally generated Rails version.
@@ -28,5 +40,8 @@ module EdgeCors
     config.public_file_server.headers = {
       'Cache-Control' => 'public, max-age=31536000'
     }
+
+    config.middleware.insert_before 0, Loggo
   end
 end
+

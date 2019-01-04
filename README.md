@@ -63,7 +63,9 @@ body {
 ### Verify in development server
 
 ```shell
-$ rails server
+$ bundle exec rake db:create
+$ bundle exec rake db:migrate
+$ bundle exec rails server
 $ open localhost:3000
 ```
 

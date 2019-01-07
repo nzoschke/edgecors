@@ -35,11 +35,13 @@ Rails.application.configure do
   # config.action_controller.asset_host = 'http://assets.example.com'
   config.action_controller.asset_host = ENV["EDGE_URL"]
 
-  config.action_controller.forgery_protection_origin_check = false
-
   config.public_file_server.headers = {
     'Cache-Control' => 'public, max-age=31536000'
   }
+
+  config.action_controller.forgery_protection_origin_check = false
+
+  config.session_store :cookie_store, key: '_app_session'
 
   # Specifies the header that your server uses for sending files.
   # config.action_dispatch.x_sendfile_header = 'X-Sendfile' # for Apache

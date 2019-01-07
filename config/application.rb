@@ -37,10 +37,6 @@ module EdgeCors
       end
     end
 
-    config.public_file_server.headers = {
-      'Cache-Control' => 'public, max-age=31536000'
-    }
-
     config.middleware.insert_before 0, Loggo
   end
 end

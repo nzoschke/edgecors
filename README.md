@@ -5,6 +5,7 @@ This demonstrates how to use CloudFront with Rails 5 and static assets like font
 
 * Rails asset pipeline serving a custom font
 * CloudFront configured to forward the `Origin` header
+* CloudFront configured to forward an `_app_session` cookie
 * rack-cors middleware white-listing herokuapp.com and any custom domains
 
 This works on Heroku with the [Edge addon](https://elements.heroku.com/addons/edge) which provisions CloudFront with the correct settings.
@@ -77,7 +78,6 @@ You should see the custom font and a request to `http://localhost:3000/assets/In
 
 ```shell
 $ heroku create edgecors
-
 $ heroku addons:create edge
 
 Creating edge on ⬢ edgecors... $5/month
@@ -88,7 +88,7 @@ Use heroku addons:docs edge to view documentation
 
 ### Or Create a CloudFront Distribution
 
-If you aren't using Edge, create a CloudFront distribution with a `foo.herokuapp.com` origin that forwards the `Origin` header. 
+If you aren't using Edge, create a CloudFront distribution with a `foo.herokuapp.com` origin that forwards the `Origin` header and `_app_session` cookie.
 
 <details>
 <summary>Example CloudFront distribution config...</summary>
@@ -142,7 +142,13 @@ If you aren't using Edge, create a CloudFront distribution with a `foo.herokuapp
             "ForwardedValues": {
                 "QueryString": false,
                 "Cookies": {
-                    "Forward": "none"
+                    "Forward": "whitelist",
+                    "WhitelistedNames": {
+                        "Quantity": 1,
+                        "Items": [
+                            "_app_session"
+                        ]
+                    }
                 },
                 "Headers": {
                     "Quantity": 1,
@@ -226,66 +232,26 @@ If you aren't using Edge, create a CloudFront distribution with a `foo.herokuapp
 
 ### Configure Static Asset Caching
 
-Configure Rails to add a `Cache-Control` header to all static assets in `config/application.rb`:
+In `config/environments/production.rb`, add configuration to:
 
-```ruby
-module EdgeCors
-  class Application < Rails::Application
-    config.public_file_server.headers = {
-      'Cache-Control' => 'public, max-age=31536000'
-    }
-  end
-end
-```
-
-Configure Rails to serve assets from CloudFront in `config/environments/production.rb`:
+1. Serve assets from CloudFront
+2. Add a `Cache-Control` header to all static assets
+3. Disable forgery protection origin check
+4. Rename the session cookie to `_app_session`
 
 ```ruby
 Rails.application.configure do
   config.action_controller.asset_host = ENV["EDGE_URL"]
+
+  config.public_file_server.headers = {
+    'Cache-Control' => 'public, max-age=31536000'
+  }
+
+  config.action_controller.forgery_protection_origin_check = false
+
+  config.session_store :cookie_store, key: '_app_session'
 end
 ```
-
-### Push to Heroku
-
-```shell
-$ git push heroku master
-
-remote: Building source:
-remote: -----> Ruby app detected
-remote: -----> Compiling Ruby/Rails
-...
-
-remote: -----> Preparing app for Rails asset pipeline
-remote:        Running: rake assets:precompile
-remote:        Yarn executable was not detected in the system.
-remote:        Download Yarn at https://yarnpkg.com/en/docs/install
-remote:        I, [2018-12-24T23:54:15.330217 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf
-remote:        I, [2018-12-24T23:54:15.330994 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf.gz
-remote:        I, [2018-12-24T23:54:17.778848 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/application-9622f0fe63bfad91bdeaa3a771e86262263840678fd66849b311b6cfb3f7cc85.js
-remote:        I, [2018-12-24T23:54:17.779473 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/application-9622f0fe63bfad91bdeaa3a771e86262263840678fd66849b311b6cfb3f7cc85.js.gz
-remote:        I, [2018-12-24T23:54:17.795843 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/application-4b7c953bb1cc320178bce681bdb96c807c8c21628f6e8306768a0ecb0172dede.css
-remote:        I, [2018-12-24T23:54:17.796264 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/application-4b7c953bb1cc320178bce681bdb96c807c8c21628f6e8306768a0ecb0172dede.css.gz
-remote:        Asset precompilation completed (3.62s)
-remote:        Cleaning assets
-remote:        Running: rake assets:clean
-```
-
-### Security warning
-
-If you look at the app now, you **will not** see the custom font. You will see a request to `http://d1unsc88mkka3m.cloudfront.net/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf` with an error in the JavaScript Console:
-
-
-```shell
-$ heroku open
-```
-
-```
-Access to font at 'https://d1unsc88mkka3m.cloudfront.net/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf' from origin 'https://edgecors.herokuapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
-edgecors.herokuapp.com/:1 GET https://d1unsc88mkka3m.cloudfront.net/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf net::ERR_FAILED
-```
-
-## CORS
 
 ### Add `rack/cors` middleware
 
@@ -323,7 +289,7 @@ end
 
 Note that `origins` contains variants of herokuapp and an [Edge custom domain](https://devcenter.heroku.com/articles/edge#custom-domain-setup). Also note there is no trailing slash on origins.
 
-## Additional Performance Tips
+## Optional Performance Tips
 
 ### Patch ActionDispatch to serve .gzip assets
 
@@ -359,11 +325,100 @@ module EdgeCors
 end
 ```
 
+### Push to Heroku
+
+```shell
+$ git push heroku master
+
+remote: Building source:
+remote: -----> Ruby app detected
+remote: -----> Compiling Ruby/Rails
+...
+
+remote: -----> Preparing app for Rails asset pipeline
+remote:        Running: rake assets:precompile
+remote:        Yarn executable was not detected in the system.
+remote:        Download Yarn at https://yarnpkg.com/en/docs/install
+remote:        I, [2018-12-24T23:54:15.330217 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf
+remote:        I, [2018-12-24T23:54:15.330994 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf.gz
+remote:        I, [2018-12-24T23:54:17.778848 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/application-9622f0fe63bfad91bdeaa3a771e86262263840678fd66849b311b6cfb3f7cc85.js
+remote:        I, [2018-12-24T23:54:17.779473 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/application-9622f0fe63bfad91bdeaa3a771e86262263840678fd66849b311b6cfb3f7cc85.js.gz
+remote:        I, [2018-12-24T23:54:17.795843 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/application-4b7c953bb1cc320178bce681bdb96c807c8c21628f6e8306768a0ecb0172dede.css
+remote:        I, [2018-12-24T23:54:17.796264 #1369]  INFO -- : Writing /tmp/build_23f43cb401fa6841af82cb776163bc1b/public/assets/application-4b7c953bb1cc320178bce681bdb96c807c8c21628f6e8306768a0ecb0172dede.css.gz
+remote:        Asset precompilation completed (3.62s)
+remote:        Cleaning assets
+remote:        Running: rake assets:clean
+```
+
+Your custom font, forms and AJAX will work from every variant of your app:
+
+- https://myapp.herokuapp.com
+- https://d1unsc88mkka3m.cloudfront.net
+- https://www.mycustomdomain.com
+
 ## Troubleshooting
 
 ### Web Page Test
 
 Try https://www.webpagetest.org against `https://edgecors.herokuapp.com` and `http://d1unsc88mkka3m.cloudfront.net` to validate good cache settings.
+
+### CORS security warning
+
+If you look at the Heroku app without `rack-cors`, you **will not** see the custom font. You will see a request to `http://d1unsc88mkka3m.cloudfront.net/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf` with an error in the JavaScript Console:
+
+```
+Access to font at 'https://d1unsc88mkka3m.cloudfront.net/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf' from origin 'https://edgecors.herokuapp.com' has been blocked by CORS policy: No 'Access-Control-Allow-Origin' header is present on the requested resource.
+edgecors.herokuapp.com/:1 GET https://d1unsc88mkka3m.cloudfront.net/assets/Inconsolata-Regular-2a53b53d55363c4913a8873d0e1636d6c09d8a3c38570fb166fc71a5123ec8dc.ttf net::ERR_FAILED
+```
+
+### Forgery Protection Origin Error
+
+If you use forms or AJAX without disabling `forgery_protection_origin_check` you will see an error in the browser:
+
+```
+The change you wanted was rejected.
+Maybe you tried to change something you didn't have access to.
+If you are the application owner check the logs for more information.
+```
+
+And an error in your logs:
+
+```
+INFO -- : [80cd656b-395f-4845-995e-aa4eb6bf16ba] Started POST "/search" for 54.239.134.74 at 2019-01-04 16:07:38 +0000
+INFO -- : [80cd656b-395f-4845-995e-aa4eb6bf16ba] Processing by WelcomeController#search as HTML
+INFO -- : [80cd656b-395f-4845-995e-aa4eb6bf16ba]   Parameters: {"utf8"=>"✓", "authenticity_token"=>"PmI61eB8eJV6VGXAJdVGYwXMA9lv/3CwXp5Auy25RMy/EUpvs94g/K+t7rXegDHe/Exw3YFBmYsio+WIBMin0Q==", "q"=>"", "commit"=>"Search"}
+WARN -- : [80cd656b-395f-4845-995e-aa4eb6bf16ba] HTTP Origin header (https://edgecors.mixable.net) didn't match request.base_url (https://edgecors.herokuapp.com)
+INFO -- : [80cd656b-395f-4845-995e-aa4eb6bf16ba] Completed 422 Unprocessable Entity in 1ms
+FATAL -- : [80cd656b-395f-4845-995e-aa4eb6bf16ba]
+FATAL -- : [80cd656b-395f-4845-995e-aa4eb6bf16ba] ActionController::InvalidAuthenticityToken (ActionController::InvalidAuthenticityToken):
+FATAL -- : [80cd656b-395f-4845-995e-aa4eb6bf16ba]
+FATAL -- : [80cd656b-395f-4845-995e-aa4eb6bf16ba] vendor/bundle/ruby/2.6.0/gems/actionpack-5.2.2/lib/action_controller/metal/request_forgery_protection.rb:211:in `handle_unverified_request'
+```
+
+
+### Forgery Protection Session Cookie Error
+
+If you use forms or AJAX without renaming the session cookie to `_app_session` (or whitelisting `_APPNAME_session` in CloudFront) you will see an error in the browser:
+
+```
+The change you wanted was rejected.
+Maybe you tried to change something you didn't have access to.
+If you are the application owner check the logs for more information.
+```
+
+And an error in your logs:
+
+```
+INFO -- : [ecb5c097-bd25-4b68-95c2-6633b8a364d5] Started POST "/search" for 54.239.134.100 at 2019-01-08 16:25:20 +0000
+INFO -- : [ecb5c097-bd25-4b68-95c2-6633b8a364d5] Processing by WelcomeController#search as HTML
+INFO -- : [ecb5c097-bd25-4b68-95c2-6633b8a364d5]   Parameters: {"utf8"=>"✓", "authenticity_token"=>"W1k6T2caGzBXfr0GYQ6iDPZuJHsFvqOipu+BFH59ckjNNDd0uSSqFws6iBJZtb+fnr4rD4PhtuPebhPGm2Bcug==", "q"=>"", "commit"=>"Search"}
+WARN -- : [ecb5c097-bd25-4b68-95c2-6633b8a364d5] Can't verify CSRF token authenticity.
+INFO -- : [ecb5c097-bd25-4b68-95c2-6633b8a364d5] Completed 422 Unprocessable Entity in 3ms
+FATAL -- : [ecb5c097-bd25-4b68-95c2-6633b8a364d5]
+FATAL -- : [ecb5c097-bd25-4b68-95c2-6633b8a364d5] ActionController::InvalidAuthenticityToken (ActionController::InvalidAuthenticityToken):
+FATAL -- : [ecb5c097-bd25-4b68-95c2-6633b8a364d5]
+FATAL -- : [ecb5c097-bd25-4b68-95c2-6633b8a364d5] config/application.rb:17:in `call'
+```
 
 ### Debug with curl
 
